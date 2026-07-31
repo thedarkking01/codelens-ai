@@ -24,6 +24,7 @@
     "multer": "^2.2.0",
     "pg": "^8.22.0",
     "prisma": "^7.9.1",
+    "simple-git": "^3.36.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
