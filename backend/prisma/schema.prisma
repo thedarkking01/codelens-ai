@@ -49,11 +49,31 @@ model File {
   language   String?
   size       Int
   content    String
+  chunks Chunk[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([repositoryId])
+}
+
+model Chunk {
+  id          String   @id @default(cuid())
+
+  fileId      String
+  file        File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  content     String
+
+  chunkIndex  Int
+
+  startLine   Int
+
+  endLine     Int
+
+  createdAt   DateTime @default(now())
+
+  @@index([fileId])
 }
 
 enum RepositoryStatus {
