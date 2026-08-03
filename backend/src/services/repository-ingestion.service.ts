@@ -3,6 +3,7 @@ import { fileRepository } from "../repositories/file.repository";
 import { repositoryImportService } from "./repository-import.service";
 import { fileScannerService } from "./file-scanner.service";
 import { AppError } from "../utils/app-error";
+import { chunkingService } from "./chunking.service";
 
 export class RepositoryIngestionService {
   async ingest(
@@ -54,6 +55,18 @@ export class RepositoryIngestionService {
 
       // 7. Save files
       await fileRepository.createMany(files);
+
+      await repositoryRepository.updateStatus(
+      repositoryId,
+      "CHUNKING",
+      );
+
+      const result =
+        await chunkingService.chunkRepository(repositoryId);
+
+      console.log(
+        `📦 Chunks created: ${result.chunksCreated}`,
+      );
 
       // 8. Mark repository as READY
       await repositoryRepository.updateStatus(

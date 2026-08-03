@@ -2,6 +2,7 @@ import { Router } from "express";
 import { repositoryController } from "../controllers/repository.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { fileController } from "../controllers/file.controller";
+import { chunkController } from "../controllers/chunk.controller";
 
 const router = Router();
 
@@ -54,4 +55,25 @@ router.delete("/:id", (req, res, next) =>
   repositoryController.delete(req, res, next),
 );
 
+
+// Repository file chunks
+router.get(
+  "/:repositoryId/files/:fileId/chunks",
+  (req, res, next) =>
+    chunkController.getChunksByFile(
+      req,
+      res,
+      next,
+    ),
+);
+
+router.get(
+  "/:repositoryId/chunks/:chunkId",
+  (req, res, next) =>
+    chunkController.getChunkById(
+      req,
+      res,
+      next,
+    ),
+);
 export default router;
