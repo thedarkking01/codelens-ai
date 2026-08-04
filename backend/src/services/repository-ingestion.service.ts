@@ -2,8 +2,9 @@ import { repositoryRepository } from "../repositories/repository.repository";
 import { fileRepository } from "../repositories/file.repository";
 import { repositoryImportService } from "./repository-import.service";
 import { fileScannerService } from "./file-scanner.service";
-import { AppError } from "../utils/app-error";
 import { chunkingService } from "./chunking.service";
+import { repositoryIndexingService } from "./repository-indexing.service";
+import { AppError } from "../utils/app-error";
 
 export class RepositoryIngestionService {
   async ingest(
@@ -11,38 +12,42 @@ export class RepositoryIngestionService {
     githubUrl: string,
   ): Promise<void> {
     try {
-      // 1. Mark repository as CLONING
+      console.log(`🚀 Starting ingestion for repository ${repositoryId}`);
+
+      // ==========================================
+      // Step 1 - Clone Repository
+      // ==========================================
       await repositoryRepository.updateStatus(
         repositoryId,
         "CLONING",
       );
 
-      // 2. Clone repository
+      console.log("📥 Cloning repository...");
+
       const localPath =
         await repositoryImportService.cloneRepository(
           repositoryId,
           githubUrl,
         );
 
-      // 3. Save local path
       await repositoryRepository.updateLocalPath(
         repositoryId,
         localPath,
       );
 
-      // 4. Mark as SCANNING
+      // ==========================================
+      // Step 2 - Scan Files
+      // ==========================================
       await repositoryRepository.updateStatus(
         repositoryId,
         "SCANNING",
       );
 
-      // 5. Scan repository
-      const scannedFiles =
-        await fileScannerService.scanRepository(
-          localPath,
-        );
+      console.log("📂 Scanning repository...");
 
-      // 6. Convert scanner results to database format
+      const scannedFiles =
+        await fileScannerService.scanRepository(localPath);
+
       const files = scannedFiles.map((file) => ({
         repositoryId,
         path: file.path,
@@ -53,41 +58,65 @@ export class RepositoryIngestionService {
         content: file.content,
       }));
 
-      // 7. Save files
       await fileRepository.createMany(files);
 
+      console.log(`📄 Files scanned: ${files.length}`);
+
+      // ==========================================
+      // Step 3 - Chunk Files
+      // ==========================================
       await repositoryRepository.updateStatus(
-      repositoryId,
-      "CHUNKING",
+        repositoryId,
+        "CHUNKING",
       );
 
-      const result =
+      console.log("✂️ Chunking files...");
+
+      const chunkResult =
         await chunkingService.chunkRepository(repositoryId);
 
       console.log(
-        `📦 Chunks created: ${result.chunksCreated}`,
+        `📦 Chunks created: ${chunkResult.chunksCreated}`,
       );
 
-      // 8. Mark repository as READY
+      // ==========================================
+      // Step 4 - Generate Embeddings
+      // ==========================================
+      await repositoryRepository.updateStatus(
+        repositoryId,
+        "EMBEDDING",
+      );
+
+      console.log("🧠 Generating embeddings...");
+
+      await repositoryIndexingService.indexRepository(
+        repositoryId,
+      );
+
+      // ==========================================
+      // Step 5 - Repository Ready
+      // ==========================================
       await repositoryRepository.updateStatus(
         repositoryId,
         "READY",
       );
 
-      console.log(
-        `✅ Repository ${repositoryId} ingestion completed.`,
-      );
+      console.log("");
+      console.log("🎉 Repository ingestion completed!");
+      console.log("------------------------------------");
+      console.log(`Repository ID : ${repositoryId}`);
+      console.log(`Files Indexed : ${files.length}`);
+      console.log(`Chunks Created: ${chunkResult.chunksCreated}`);
+      console.log("Status        : READY");
+      console.log("AI Search     : ENABLED");
+      console.log("------------------------------------");
 
-      console.log(
-        `📊 Files indexed: ${files.length}`,
-      );
     } catch (error) {
       console.error(
         `❌ Repository ${repositoryId} ingestion failed:`,
         error,
       );
 
-      // Mark repository as FAILED
       try {
         await repositoryRepository.updateStatus(
           repositoryId,
@@ -98,6 +127,10 @@ export class RepositoryIngestionService {
           "Failed to update repository status:",
           statusError,
         );
+      }
+
+      if (error instanceof AppError) {
+        throw error;
       }
 
       throw new AppError(

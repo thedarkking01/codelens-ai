@@ -8,7 +8,7 @@ export class ChunkRepository {
       chunkIndex: number;
       startLine: number;
       endLine: number;
-    }[]
+    }[],
   ) {
     return prisma.chunk.createMany({
       data,
@@ -28,11 +28,11 @@ export class ChunkRepository {
 
   async findById(chunkId: string) {
     return prisma.chunk.findUnique({
-        where: {
+      where: {
         id: chunkId,
-        },
+      },
     });
-   }
+  }
 
   async deleteByFileId(fileId: string) {
     return prisma.chunk.deleteMany({
@@ -46,6 +46,41 @@ export class ChunkRepository {
     return prisma.chunk.count({
       where: {
         fileId,
+      },
+    });
+  }
+
+  async findByRepositoryId(repositoryId: string) {
+    return prisma.chunk.findMany({
+      where: {
+        file: {
+          repositoryId,
+        },
+      },
+      include: {
+        file: true,
+      },
+      orderBy: [
+        {
+          file: {
+            path: "asc",
+          },
+        },
+        {
+          chunkIndex: "asc",
+        },
+      ],
+    });
+  }
+
+  async updateEmbeddingMetadata(chunkId: string, embeddingId: string) {
+    return prisma.chunk.update({
+      where: {
+        id: chunkId,
+      },
+      data: {
+        embeddingId,
+        embeddedAt: new Date(),
       },
     });
   }

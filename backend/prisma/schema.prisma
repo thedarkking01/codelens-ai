@@ -71,6 +71,9 @@ model Chunk {
 
   endLine     Int
 
+  embeddingId String?
+  embeddedAt  DateTime?
+
   createdAt   DateTime @default(now())
 
   @@index([fileId])
@@ -81,6 +84,7 @@ enum RepositoryStatus {
   CLONING
   SCANNING
   CHUNKING
+  EMBEDDING
   READY
   FAILED
 }
