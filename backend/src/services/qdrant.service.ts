@@ -1,8 +1,7 @@
 import { QdrantClient } from "@qdrant/js-client-rest";
 import { COLLECTION_NAME, qdrantClient } from "../config/qdrant";
 
-export interface QdrantPointPayload 
-  extends Record<string, unknown>{
+export interface QdrantPointPayload extends Record<string, unknown> {
   repositoryId: string;
   fileId: string;
   chunkId: string;
@@ -34,10 +33,10 @@ export class QdrantService {
     }
 
     await this.client.createCollection(COLLECTION_NAME, {
-        vectors: {
-            size: 3072,
-            distance: "Cosine",
-        },
+      vectors: {
+        size: 3072,
+        distance: "Cosine",
+      },
     });
 
     console.log(`✅ Qdrant collection "${COLLECTION_NAME}" created.`);
@@ -74,6 +73,47 @@ export class QdrantService {
     return this.client.query(COLLECTION_NAME, {
       query: vector,
       limit,
+    });
+  }
+
+  /**
+   * Search only inside a single repository.
+   */
+  async searchRepository(
+    repositoryId: string,
+    vector: number[],
+    limit = 10
+  ) {
+    return this.client.query(COLLECTION_NAME, {
+      query: vector,
+      limit,
+      with_payload: true,
+      with_vector: false,
+      filter: {
+        must: [
+          {
+            key: "repositoryId",
+            match: {
+              value: repositoryId,
+            },
+          },
+        ],
+      },
+    });
+  }
+
+  /**
+   * Generic filtered search.
+   */
+  async searchWithFilter(
+    vector: number[],
+    filter: Record<string, unknown>,
+    limit = 10
+  ) {
+    return this.client.query(COLLECTION_NAME, {
+      query: vector,
+      limit,
+      filter,
     });
   }
 }

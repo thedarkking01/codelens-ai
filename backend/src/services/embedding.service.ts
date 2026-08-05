@@ -1,10 +1,17 @@
 import { geminiClient, EMBEDDING_MODEL } from "../config/gemini";
 
+export type EmbeddingTaskType =
+  | "RETRIEVAL_DOCUMENT"
+  | "RETRIEVAL_QUERY";
+
 export class EmbeddingService {
   /**
    * Generate an embedding for a single text.
    */
-  async generateEmbedding(text: string): Promise<number[]> {
+  async generateEmbedding(
+    text: string,
+    taskType: EmbeddingTaskType = "RETRIEVAL_DOCUMENT"
+  ): Promise<number[]> {
     if (!text.trim()) {
       throw new Error("Cannot generate embedding for empty text.");
     }
@@ -14,7 +21,7 @@ export class EmbeddingService {
         model: EMBEDDING_MODEL,
         contents: text,
         config: {
-          taskType: "RETRIEVAL_DOCUMENT",
+          taskType,
         },
       });
 
@@ -34,7 +41,10 @@ export class EmbeddingService {
   /**
    * Generate embeddings for multiple texts.
    */
-  async generateEmbeddings(texts: string[]): Promise<number[][]> {
+  async generateEmbeddings(
+    texts: string[],
+    taskType: EmbeddingTaskType = "RETRIEVAL_DOCUMENT"
+  ): Promise<number[][]> {
     if (texts.length === 0) {
       return [];
     }
@@ -44,7 +54,7 @@ export class EmbeddingService {
         model: EMBEDDING_MODEL,
         contents: texts,
         config: {
-          taskType: "RETRIEVAL_DOCUMENT",
+          taskType,
         },
       });
 

@@ -6,6 +6,7 @@ import morgan from "morgan";
 import authRoutes from "./routes/auth.routes";
 import repositoryRoutes from "./routes/repository.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
+import searchRoutes from "./routes/search.routes.js";
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.get("/api/health", (_req, res) => {
     message: "CodeLens AI Backend Running 🚀",
   });
 });
+app.use("/api/v1/search", searchRoutes);
 
 // Global error middleware MUST be registered last
 app.use(errorMiddleware);

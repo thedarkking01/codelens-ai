@@ -34,6 +34,31 @@ export class ChunkRepository {
     });
   }
 
+  async findByIds(chunkIds: string[]) {
+    return prisma.chunk.findMany({
+      where: {
+        id: {
+          in: chunkIds,
+        },
+      },
+      include: {
+        file: true,
+      },
+    });
+  }
+
+  async findChunkWithFile(chunkId: string) {
+    return prisma.chunk.findUnique({
+      where: {
+        id: chunkId,
+      },
+      include: {
+        file: true,
+      },
+    });
+  }
+
+
   async deleteByFileId(fileId: string) {
     return prisma.chunk.deleteMany({
       where: {
