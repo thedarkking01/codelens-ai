@@ -7,6 +7,7 @@ import authRoutes from "./routes/auth.routes";
 import repositoryRoutes from "./routes/repository.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import searchRoutes from "./routes/search.routes.js";
+import chatRoutes from "./routes/chat.routes";
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.get("/api/health", (_req, res) => {
   });
 });
 app.use("/api/v1/search", searchRoutes);
+app.use("/api/v1/chat", chatRoutes);
 
 // Global error middleware MUST be registered last
 app.use(errorMiddleware);

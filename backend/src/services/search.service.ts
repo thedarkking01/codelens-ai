@@ -4,7 +4,7 @@ import { chunkRepository } from "../repositories/chunk.repository.js";
 
 export interface SearchResult {
   score: number;
-//   chunkId: string;
+  chunkId: string;
   filePath: string;
   language: string;
   startLine: number;
@@ -68,7 +68,7 @@ export class SearchService {
 
       results.push({
         score: point.score ?? 0,
-        // chunkId
+        chunkId,
         filePath: payload.filePath as string,
         language: payload.language as string,
         startLine: payload.startLine as number,
