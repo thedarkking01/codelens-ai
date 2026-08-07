@@ -13,25 +13,26 @@ export interface SearchResult {
 }
 
 export class SearchService {
-  async searchRepository(
-    repositoryId: string,
-    query: string,
-    limit = 5
-  ) {
+  async searchRepository(repositoryId: string, query: string, limit?: number) {
+    const topK = limit ?? Number(process.env.SEARCH_TOP_K ?? 5);
+
+    const minScore = Number(process.env.SEARCH_MIN_SCORE ?? 0.5);
     // Step 1: Generate embedding
     const embedding = await embeddingService.generateEmbedding(
       query,
-      "RETRIEVAL_QUERY"
+      "RETRIEVAL_QUERY",
     );
 
     // Step 2: Search Qdrant
     const searchResult = await qdrantService.searchRepository(
       repositoryId,
       embedding,
-      limit
+      topK,
     );
 
-    const points = searchResult.points ?? [];
+    const points = (searchResult.points ?? []).filter(
+      (point) => (point.score ?? 0) >= minScore,
+    );
 
     if (points.length === 0) {
       return {
@@ -48,9 +49,7 @@ export class SearchService {
 
     const chunks = await chunkRepository.findByIds(chunkIds);
 
-    const chunkMap = new Map(
-      chunks.map((chunk) => [chunk.id, chunk])
-    );
+    const chunkMap = new Map(chunks.map((chunk) => [chunk.id, chunk]));
 
     // Step 4: Merge Qdrant metadata with PostgreSQL content
     const results: SearchResult[] = [];

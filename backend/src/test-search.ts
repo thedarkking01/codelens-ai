@@ -4,7 +4,7 @@ import { searchService } from "./services/search.service.js";
 
 async function main() {
   // Replace with your actual repository ID
-  const repositoryId = "cmsgckvj50000c0vrtzxc9d9n";
+  const repositoryId = "cmsj5vb020000m0vre3m6xkta";
 
   const queries = [
     "Where is JWT authentication implemented?",

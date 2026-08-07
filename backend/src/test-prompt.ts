@@ -5,8 +5,8 @@ const prompt = promptBuilder.buildPrompt(
   [
     {
       chunkId: "1",
-      fileId: "1",
       filePath: "src/services/auth.service.ts",
+      language: "typescript",
       startLine: 10,
       endLine: 40,
       content: "function login() { ... }",
@@ -14,8 +14,8 @@ const prompt = promptBuilder.buildPrompt(
     },
     {
       chunkId: "2",
-      fileId: "2",
       filePath: "src/middleware/auth.middleware.ts",
+      language: "typescript",
       startLine: 5,
       endLine: 25,
       content: "export const authenticate = ...",

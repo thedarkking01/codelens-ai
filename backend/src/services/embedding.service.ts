@@ -4,6 +4,8 @@ export type EmbeddingTaskType =
   | "RETRIEVAL_DOCUMENT"
   | "RETRIEVAL_QUERY";
 
+const MAX_BATCH_SIZE = 100;
+
 export class EmbeddingService {
   /**
    * Generate an embedding for a single text.
@@ -40,6 +42,9 @@ export class EmbeddingService {
 
   /**
    * Generate embeddings for multiple texts.
+   *
+   * Gemini allows a maximum of 100 texts per embedding request,
+   * so larger inputs are automatically split into batches.
    */
   async generateEmbeddings(
     texts: string[],
@@ -49,38 +54,58 @@ export class EmbeddingService {
       return [];
     }
 
-    try {
-      const response = await geminiClient.models.embedContent({
-        model: EMBEDDING_MODEL,
-        contents: texts,
-        config: {
-          taskType,
-        },
-      });
+    const allEmbeddings: number[][] = [];
 
-      if (!response.embeddings) {
-        throw new Error("Gemini returned no embeddings.");
+    try {
+      for (let i = 0; i < texts.length; i += MAX_BATCH_SIZE) {
+        const batch = texts.slice(i, i + MAX_BATCH_SIZE);
+
+        console.log(
+          `Generating embeddings: ${i + 1}-${i + batch.length} of ${texts.length}`
+        );
+
+        const response = await geminiClient.models.embedContent({
+          model: EMBEDDING_MODEL,
+          contents: batch,
+          config: {
+            taskType,
+          },
+        });
+
+        if (!response.embeddings) {
+          throw new Error("Gemini returned no embeddings.");
+        }
+
+        if (response.embeddings.length !== batch.length) {
+          throw new Error(
+            `Expected ${batch.length} embeddings but received ${response.embeddings.length}.`
+          );
+        }
+
+        for (let j = 0; j < response.embeddings.length; j++) {
+          const values = response.embeddings[j].values;
+
+          if (!values) {
+            throw new Error(
+              `Embedding at batch index ${j} has no values.`
+            );
+          }
+
+          allEmbeddings.push(values);
+        }
       }
 
-      if (response.embeddings.length !== texts.length) {
+      if (allEmbeddings.length !== texts.length) {
         throw new Error(
-          `Expected ${texts.length} embeddings but received ${response.embeddings.length}.`
+          `Expected ${texts.length} total embeddings but received ${allEmbeddings.length}.`
         );
       }
 
-      const embeddings: number[][] = [];
+      console.log(
+        `Successfully generated ${allEmbeddings.length} embeddings.`
+      );
 
-      for (let i = 0; i < response.embeddings.length; i++) {
-        const values = response.embeddings[i].values;
-
-        if (!values) {
-          throw new Error(`Embedding at index ${i} has no values.`);
-        }
-
-        embeddings.push(values);
-      }
-
-      return embeddings;
+      return allEmbeddings;
     } catch (error) {
       console.error("Batch embedding generation failed:", error);
       throw error;

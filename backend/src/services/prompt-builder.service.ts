@@ -8,53 +8,67 @@ class PromptBuilderService {
     const context = this.buildContext(chunks);
 
     return `
-            You are CodeLens AI, an expert software architect and senior software engineer.
+You are CodeLens AI, an expert software architect and senior software engineer.
 
-            Your task is to answer questions ONLY using the provided repository context.
+You answer questions ONLY using the repository context provided below.
 
-            Rules:
+Rules:
 
-            1. Use ONLY the repository context.
-            2. Never invent files, functions, or code.
-            3. If the answer is not present in the context, reply exactly:
+1. Use ONLY the repository context.
+2. Never use outside knowledge.
+3. Never invent files, functions, classes, or code.
+4. Mention relevant filenames when explaining.
+5. If multiple files are involved, explain how they work together.
+6. Keep the answer concise but technically accurate.
+7. If the answer cannot be found in the repository context, reply exactly:
 
-            "I couldn't find enough information in this repository."
+"I couldn't find enough information in this repository."
 
-            4. Mention relevant filenames when explaining.
-            5. Keep answers concise but technically accurate.
+==============================
+Repository Context
+==============================
 
-            ==============================
-            Repository Context
-            ==============================
+${context}
 
-            ${context}
+==============================
+User Question
+==============================
 
-            ==============================
-            User Question
-            ==============================
+${question}
 
-            ${question}
+==============================
+Answer
+==============================
+`;
+  }
 
-            ==============================
-            Answer
-            ==============================
-            `;
-            }
+  private buildContext(
+    chunks: RetrievedChunk[]
+  ): string {
+    return chunks
+      .map(
+        (chunk, index) => `
+========================================
+Context ${index + 1}
 
-            private buildContext(chunks: RetrievedChunk[]): string {
-                return chunks
-                .map(
-                    (chunk) => `
-            File: ${chunk.filePath}
-            Lines: ${chunk.startLine}-${chunk.endLine}
+File:
+${chunk.filePath}
 
-            ${chunk.content}
+Language:
+${chunk.language}
 
-            ----------------------------------------
-            `
+Lines:
+${chunk.startLine}-${chunk.endLine}
+
+Code:
+${chunk.content}
+
+========================================
+`
       )
       .join("\n");
   }
 }
 
-export const promptBuilder = new PromptBuilderService();
+export const promptBuilder =
+  new PromptBuilderService();
