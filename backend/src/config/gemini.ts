@@ -1,3 +1,4 @@
+import "dotenv/config";
 import { GoogleGenAI } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
@@ -14,4 +15,4 @@ export const EMBEDDING_MODEL =
   process.env.EMBEDDING_MODEL ?? "gemini-embedding-001";
 
 export const CHAT_MODEL =
-  process.env.CHAT_MODEL ?? "gemini-2.5-flash";
+  process.env.CHAT_MODEL ?? "gemini-3.5-flash";
