@@ -31,11 +31,24 @@ export class RepositoryIndexingService {
      * This makes repository indexing resumable.
      */
     const pendingChunks = chunks.filter(
-      (chunk) => !chunk.embeddingId
+      (chunk) =>
+        !chunk.embeddingId &&
+        chunk.content &&
+        chunk.content.trim().length > 0
+    );
+
+    const skippedEmptyChunks = chunks.filter(
+      (chunk) =>
+        !chunk.embeddingId &&
+        (!chunk.content || chunk.content.trim().length === 0)
     );
 
     console.log(
       `🧩 Pending embeddings: ${pendingChunks.length}`
+    );
+
+    console.log(
+      `⏭️ Skipped empty chunks: ${skippedEmptyChunks.length}`
     );
 
     if (pendingChunks.length === 0) {

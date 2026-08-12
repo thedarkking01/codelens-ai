@@ -2,14 +2,15 @@ import "dotenv/config";
 
 import { chatService } from "./services/chat.service";
 
-const repositoryId = "cmsgckvj50000c0vrtzxc9d9n";
+const repositoryId = "cmsqes1qq0000uovrcu3lo8xs";
 
 const questions = [
-  "Where is JWT authentication implemented?",
-  "Where are repositories cloned?",
-  "Where are embeddings generated?",
-  "Where is Qdrant initialized?",
-  "How are files chunked?",
+  "How do I start the FastAPI server?",
+  "What API endpoints are available for expenses?",
+  "How can I filter expenses by category?",
+  "What validation rules are applied to expenses?",
+  "What database does the application use?",
+  "How do I create a new expense?",
 ];
 
 async function main() {
