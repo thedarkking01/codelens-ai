@@ -8,12 +8,13 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  name      String
-  email     String   @unique
-  password  String
+  id       String @id @default(cuid())
+  name     String
+  email    String @unique
+  password String
 
   repositories Repository[]
+  chatSessions ChatSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -27,10 +28,11 @@ model Repository {
   status    RepositoryStatus @default(PENDING)
   localPath String?
 
-  userId    String
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  files     File[]
+  files        File[]
+  chatSessions ChatSession[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -38,17 +40,52 @@ model Repository {
   @@index([userId])
 }
 
+model ChatSession {
+  id String @id @default(cuid())
+
+  userId       String
+  repositoryId String
+
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  title String @default("New Repository Chat")
+
+  messages ChatMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([repositoryId])
+}
+
+model ChatMessage {
+  id String @id @default(cuid())
+
+  sessionId String
+  session   ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  role    ChatMessageRole
+  content String
+
+  createdAt DateTime @default(now())
+
+  @@index([sessionId])
+}
+
 model File {
   id           String     @id @default(cuid())
   repositoryId String
   repository   Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
-  path       String
-  name       String
-  extension  String?
-  language   String?
-  size       Int
-  content    String
+  path      String
+  name      String
+  extension String?
+  language  String?
+  size      Int
+  content   String
+
   chunks Chunk[]
 
   createdAt DateTime @default(now())
@@ -58,23 +95,21 @@ model File {
 }
 
 model Chunk {
-  id          String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  fileId      String
-  file        File @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  fileId String
+  file   File   @relation(fields: [fileId], references: [id], onDelete: Cascade)
 
-  content     String
+  content String
 
-  chunkIndex  Int
-
-  startLine   Int
-
-  endLine     Int
+  chunkIndex Int
+  startLine  Int
+  endLine    Int
 
   embeddingId String?
   embeddedAt  DateTime?
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([fileId])
 }
@@ -87,4 +122,9 @@ enum RepositoryStatus {
   EMBEDDING
   READY
   FAILED
+}
+
+enum ChatMessageRole {
+  USER
+  ASSISTANT
 }
