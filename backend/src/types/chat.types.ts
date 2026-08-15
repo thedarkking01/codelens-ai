@@ -7,6 +7,10 @@ export interface RetrievedChunk {
   content: string;
   score?: number;
 }
+export interface ChatHistoryMessage {
+  role: "USER" | "ASSISTANT";
+  content: string;
+}
 
 export interface SourceReference {
   chunkId: string;

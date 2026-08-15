@@ -8,10 +8,6 @@ async function main() {
 
   const queries = [
     "Where is JWT authentication implemented?",
-    "Where are repositories cloned?",
-    "Where are embeddings generated?",
-    "Where is Qdrant initialized?",
-    "How are files chunked?",
   ];
 
   for (const query of queries) {

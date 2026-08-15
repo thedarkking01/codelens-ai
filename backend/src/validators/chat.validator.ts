@@ -9,3 +9,22 @@ export const chatSchema = z.object({
 });
 
 export type ChatInput = z.infer<typeof chatSchema>;
+
+export const createChatSessionSchema = z.object({
+  repositoryId: z
+    .string()
+    .min(1, "Repository ID is required"),
+});
+
+export type CreateChatSessionInput =
+  z.infer<typeof createChatSessionSchema>;
+
+export const sendChatMessageSchema = z.object({
+  message: z
+    .string()
+    .min(1, "Message cannot be empty")
+    .max(2000, "Message is too long"),
+});
+
+export type SendChatMessageInput =
+  z.infer<typeof sendChatMessageSchema>;
