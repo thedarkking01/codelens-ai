@@ -36,6 +36,7 @@ model Repository {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  indexingJobs IndexingJob[]
 
   @@index([userId])
 }
@@ -127,4 +128,42 @@ enum RepositoryStatus {
 enum ChatMessageRole {
   USER
   ASSISTANT
+}
+
+enum IndexingJobStatus {
+  QUEUED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum IndexingStep {
+  CLONING
+  SCANNING
+  CHUNKING
+  EMBEDDING
+  INDEXING
+}
+
+model IndexingJob {
+  id           String           @id @default(cuid())
+  repositoryId String
+
+  status       IndexingJobStatus @default(QUEUED)
+  progress     Int               @default(0)
+  currentStep  IndexingStep?
+
+  error        String?
+
+  startedAt    DateTime?
+  completedAt  DateTime?
+
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  repository   Repository       @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+
+  @@index([repositoryId])
+  @@index([status])
+  @@index([createdAt])
 }
