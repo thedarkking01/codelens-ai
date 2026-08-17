@@ -6,6 +6,8 @@ const requiredEnvVars = [
   "DATABASE_URL",
   "JWT_SECRET",
   "JWT_EXPIRES_IN",
+  "REDIS_HOST",
+  "REDIS_PORT",
 ] as const;
 
 for (const key of requiredEnvVars) {
@@ -22,4 +24,8 @@ export const env = {
   JWT_SECRET: process.env.JWT_SECRET!,
 
   JWT_EXPIRES_IN: process.env.JWT_EXPIRES_IN as string,
+
+  REDIS_HOST: process.env.REDIS_HOST!,
+
+  REDIS_PORT: Number(process.env.REDIS_PORT) || 6379,
 };
