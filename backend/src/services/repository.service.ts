@@ -1,36 +1,50 @@
 import { AppError } from "../utils/app-error";
 import { repositoryRepository } from "../repositories/repository.repository";
-import { repositoryIngestionService } from "./repository-ingestion.service";
+import { prisma } from "../config/prisma";
+import { indexingQueue } from "../queues/indexing.queue";
 import type { CreateRepositoryInput } from "../validators/repository.validator";
 
 export class RepositoryService {
-  async createRepository(userId: string, data: CreateRepositoryInput) {
-    const repositoryName = this.extractRepositoryName(data.githubUrl);
+  async createRepository(
+    userId: string,
+    data: CreateRepositoryInput,
+  ) {
+    const repositoryName =
+      this.extractRepositoryName(data.githubUrl);
 
     // 1. Create repository record
-    const repository = await repositoryRepository.create({
-      name: repositoryName,
-      githubUrl: data.githubUrl,
-      user: {
-        connect: {
-          id: userId,
+    const repository =
+      await repositoryRepository.create({
+        name: repositoryName,
+        githubUrl: data.githubUrl,
+        user: {
+          connect: {
+            id: userId,
+          },
         },
-      },
-    });
-
-    // 2. Start repository ingestion
-    // We intentionally don't await this.
-    // The API should not wait for cloning/scanning.
-    void repositoryIngestionService
-      .ingest(repository.id, repository.githubUrl)
-      .catch((error) => {
-        console.error(
-          `Repository ingestion failed for ${repository.id}:`,
-          error,
-        );
       });
 
-    // 3. Immediately return repository
+    // 2. Create indexing job in PostgreSQL
+    const indexingJob =
+      await prisma.indexingJob.create({
+        data: {
+          repositoryId: repository.id,
+          status: "QUEUED",
+          progress: 0,
+        },
+      });
+
+    // 3. Add job to Redis/BullMQ
+    await indexingQueue.add(
+      "index-repository",
+      {
+        repositoryId: repository.id,
+        indexingJobId: indexingJob.id,
+        githubUrl: repository.githubUrl,
+      },
+    );
+
+    // 4. Immediately return
     return repository;
   }
 

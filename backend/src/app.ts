@@ -8,6 +8,7 @@ import repositoryRoutes from "./routes/repository.routes";
 import { errorMiddleware } from "./middleware/error.middleware";
 import searchRoutes from "./routes/search.routes.js";
 import chatRoutes from "./routes/chat.routes";
+import indexingJobRoutes from "./routes/indexing-job.routes";
 
 const app = express();
 
@@ -18,6 +19,10 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/v1/repositories", repositoryRoutes);
+app.use(
+  "/api/v1/indexing-jobs",
+  indexingJobRoutes,
+);
 
 app.get("/api/health", (_req, res) => {
   res.json({
