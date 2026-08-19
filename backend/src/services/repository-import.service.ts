@@ -1,7 +1,6 @@
 import { simpleGit } from "simple-git";
 import path from "path";
 import fs from "fs/promises";
-import crypto from "crypto";
 import { AppError } from "../utils/app-error";
 
 export class RepositoryImportService {
@@ -21,16 +20,53 @@ export class RepositoryImportService {
     );
 
     try {
+      // Make sure the parent directory exists
       await fs.mkdir(this.basePath, {
         recursive: true,
       });
+
+      // Defensive validation
+      if (!githubUrl || typeof githubUrl !== "string") {
+        throw new AppError(
+          400,
+          "GitHub repository URL is required",
+        );
+      }
+
+      if (
+        !repositoryId ||
+        typeof repositoryId !== "string"
+      ) {
+        throw new AppError(
+          400,
+          "Repository ID is required",
+        );
+      }
+
+      console.log(
+        `🔗 GitHub URL: ${githubUrl}`,
+      );
+
+      console.log(
+        `📁 Clone destination: ${repositoryPath}`,
+      );
 
       const git = simpleGit();
 
       await git.clone(
         githubUrl,
         repositoryPath,
-        ["--depth", "1"],
+        {
+          "--depth": "1",
+        },
+      );
+
+      console.log(
+        `✅ Repository cloned successfully`,
+      );
+
+      console.log(
+        `📁 Local path: ${repositoryPath}`,
       );
 
       return repositoryPath;
@@ -41,9 +77,13 @@ export class RepositoryImportService {
       });
 
       console.error(
-        `Failed to clone repository ${repositoryId}`,
+        `❌ Failed to clone repository ${repositoryId}`,
         error,
       );
+
+      if (error instanceof AppError) {
+        throw error;
+      }
 
       throw new AppError(
         500,
