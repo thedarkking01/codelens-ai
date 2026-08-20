@@ -34,8 +34,8 @@ model Repository {
   files        File[]
   chatSessions ChatSession[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   indexingJobs IndexingJob[]
 
   @@index([userId])
@@ -89,10 +89,31 @@ model File {
 
   chunks Chunk[]
 
+  outgoingDependencies Dependency[] @relation("SourceFile")
+  incomingDependencies Dependency[] @relation("TargetFile")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([repositoryId])
+}
+
+model Dependency {
+  id String @id @default(cuid())
+
+  sourceFileId String
+  targetFileId String
+
+  sourceFile File @relation("SourceFile", fields: [sourceFileId], references: [id], onDelete: Cascade)
+  targetFile File @relation("TargetFile", fields: [targetFileId], references: [id], onDelete: Cascade)
+
+  type String
+
+  createdAt DateTime @default(now())
+
+  @@unique([sourceFileId, targetFileId, type])
+  @@index([sourceFileId])
+  @@index([targetFileId])
 }
 
 model Chunk {
@@ -146,22 +167,22 @@ enum IndexingStep {
 }
 
 model IndexingJob {
-  id           String           @id @default(cuid())
+  id           String @id @default(cuid())
   repositoryId String
 
-  status       IndexingJobStatus @default(QUEUED)
-  progress     Int               @default(0)
-  currentStep  IndexingStep?
+  status      IndexingJobStatus @default(QUEUED)
+  progress    Int               @default(0)
+  currentStep IndexingStep?
 
-  error        String?
+  error String?
 
-  startedAt    DateTime?
-  completedAt  DateTime?
+  startedAt   DateTime?
+  completedAt DateTime?
 
-  createdAt    DateTime          @default(now())
-  updatedAt    DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  repository   Repository       @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
+  repository Repository @relation(fields: [repositoryId], references: [id], onDelete: Cascade)
 
   @@index([repositoryId])
   @@index([status])
