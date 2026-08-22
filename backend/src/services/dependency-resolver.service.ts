@@ -68,17 +68,34 @@ function buildCandidates(
 
   const extensions =
     language?.toLowerCase() === "python"
-      ? PYTHON_EXTENSIONS
-      : TYPESCRIPT_EXTENSIONS;
+      ? [".py"]
+      : [".ts", ".tsx", ".js", ".jsx"];
 
+  // Normal extension resolution
   for (const extension of extensions) {
     candidates.add(`${filePath}${extension}`);
   }
 
+  // index file resolution
   for (const extension of extensions) {
     candidates.add(
       path.posix.join(filePath, `index${extension}`),
     );
+  }
+
+  // TypeScript projects commonly import .js
+  // while the actual source file is .ts/.tsx.
+  if (
+    filePath.endsWith(".js") ||
+    filePath.endsWith(".jsx")
+  ) {
+    const withoutExtension = filePath.replace(
+      /\.(js|jsx)$/,
+      "",
+    );
+
+    candidates.add(`${withoutExtension}.ts`);
+    candidates.add(`${withoutExtension}.tsx`);
   }
 
   return Array.from(candidates);

@@ -1,0 +1,2 @@
+-- AlterEnum
+ALTER TYPE "IndexingStep" ADD VALUE 'DEPENDENCY_ANALYSIS';

@@ -7,6 +7,7 @@ import {
 } from "../generated/prisma/enums";
 import type { IndexingJobData } from "../queues/indexing.queue";
 import { repositoryIngestionService } from "../services/repository-ingestion.service";
+import { buildFileDependencies } from "../services/dependency.service";
 
 async function updateIndexingJob(
   indexingJobId: string,
@@ -22,6 +23,72 @@ async function updateIndexingJob(
       currentStep,
     },
   });
+}
+
+async function analyzeRepositoryDependencies(
+  repositoryId: string,
+  indexingJobId: string,
+) {
+  await prisma.dependency.deleteMany({
+    where: {
+      sourceFile: {
+        repositoryId,
+      },
+    },
+  });
+
+  const files = await prisma.file.findMany({
+    where: {
+      repositoryId,
+    },
+    select: {
+      id: true,
+      path: true,
+    },
+    orderBy: {
+      path: "asc",
+    },
+  });
+
+  console.log(
+    `\n🔗 Dependency analysis started for ${files.length} files`,
+  );
+
+  if (files.length === 0) {
+    console.log("No files found for dependency analysis.");
+    return 0;
+  }
+
+  let processedFiles = 0;
+  let totalDependencies = 0;
+
+  for (const file of files) {
+    const createdCount = await buildFileDependencies(file.id);
+
+    totalDependencies += createdCount;
+    processedFiles++;
+
+    const progress = Math.min(
+      89,
+      60 + Math.floor((processedFiles / files.length) * 29),
+    );
+
+    await updateIndexingJob(
+      indexingJobId,
+      progress,
+      IndexingStep.DEPENDENCY_ANALYSIS,
+    );
+
+    console.log(
+      `🔗 ${processedFiles}/${files.length} | ${file.path} | dependencies: ${createdCount}`,
+    );
+  }
+
+  console.log(
+    `\n✅ Dependency analysis completed: ${totalDependencies} dependencies`,
+  );
+
+  return totalDependencies;
 }
 
 const worker = new Worker<IndexingJobData>(
@@ -106,7 +173,31 @@ const worker = new Worker<IndexingJobData>(
       );
 
       // ==========================================
-      // STEP 3 - Mark COMPLETED
+      // STEP 3 - Dependency Analysis
+      // ==========================================
+
+      await updateIndexingJob(
+        indexingJob.id,
+        60,
+        IndexingStep.DEPENDENCY_ANALYSIS,
+      );
+
+      await job.updateProgress(60);
+
+      console.log("\n🔗 Starting dependency analysis...");
+
+      const dependencyCount =
+        await analyzeRepositoryDependencies(
+          job.data.repositoryId,
+          indexingJob.id,
+        );
+
+      console.log(
+        `🔗 Total dependencies discovered: ${dependencyCount}`,
+      );
+
+      // ==========================================
+      // STEP 4 - Mark COMPLETED
       // ==========================================
 
       await prisma.indexingJob.update({
