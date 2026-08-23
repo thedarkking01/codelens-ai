@@ -26,8 +26,88 @@ export async function resolveDependency(
     return null;
   }
 
-  // External packages such as "express"
+  const language =
+    sourceFile.language?.toLowerCase();
+
+  const sourceDirectory = path.posix.dirname(
+    sourceFile.path,
+  );
+
+  // ==========================================
+  // PYTHON LOCAL MODULE RESOLUTION
+  // ==========================================
+
+  if (language === "python") {
+    const pythonCandidates: string[] = [];
+
+    // Relative Python imports:
+    // from .utils import something
+    if (
+      importPath.startsWith(".") ||
+      importPath.startsWith("/")
+    ) {
+      const normalizedPath =
+        path.posix.normalize(
+          path.posix.join(
+            sourceDirectory,
+            importPath,
+          ),
+        );
+
+      pythonCandidates.push(
+        `${normalizedPath}.py`,
+        path.posix.join(
+          normalizedPath,
+          "__init__.py",
+        ),
+      );
+    } else {
+      // Local Python imports:
+      //
+      // import game_logic
+      // import player
+      // import computer
+      //
+      // Resolve relative to the source file's directory.
+
+      pythonCandidates.push(
+        path.posix.join(
+          sourceDirectory,
+          `${importPath}.py`,
+        ),
+        path.posix.join(
+          sourceDirectory,
+          importPath,
+          "__init__.py",
+        ),
+      );
+    }
+
+    const targetFile =
+      await prisma.file.findFirst({
+        where: {
+          repositoryId: sourceFile.repositoryId,
+          path: {
+            in: pythonCandidates,
+          },
+        },
+      });
+
+    return targetFile?.id ?? null;
+  }
+
+  // ==========================================
+  // TYPESCRIPT / JAVASCRIPT
+  // ==========================================
+
+  // External packages such as:
+  //
+  // express
+  // zod
+  // jsonwebtoken
+  //
   // are not repository files.
+
   if (
     !importPath.startsWith(".") &&
     !importPath.startsWith("/")
@@ -35,25 +115,28 @@ export async function resolveDependency(
     return null;
   }
 
-  const sourceDirectory = path.posix.dirname(sourceFile.path);
-
-  const normalizedPath = path.posix.normalize(
-    path.posix.join(sourceDirectory, importPath),
-  );
+  const normalizedPath =
+    path.posix.normalize(
+      path.posix.join(
+        sourceDirectory,
+        importPath,
+      ),
+    );
 
   const candidates = buildCandidates(
     normalizedPath,
     sourceFile.language,
   );
 
-  const targetFile = await prisma.file.findFirst({
-    where: {
-      repositoryId: sourceFile.repositoryId,
-      path: {
-        in: candidates,
+  const targetFile =
+    await prisma.file.findFirst({
+      where: {
+        repositoryId: sourceFile.repositoryId,
+        path: {
+          in: candidates,
+        },
       },
-    },
-  });
+    });
 
   return targetFile?.id ?? null;
 }

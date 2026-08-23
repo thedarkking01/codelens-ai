@@ -4,7 +4,7 @@ import { buildFileDependencies } from "./services/dependency.service";
 async function main() {
   const file = await prisma.file.findFirst({
     where: {
-      path: "backend/src/app.ts",
+      path: "Rock_paper_scissor/main.py",
     },
   });
 
