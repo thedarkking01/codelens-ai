@@ -12,6 +12,7 @@ import Register from './pages/Register'
 import Dashboard from './pages/Dashboard'
 
 import ProtectedRoute from './routes/ProtectedRoute'
+import RepositoryDetails from './pages/RepositoryDetails'
 
 function App() {
   return (
@@ -26,6 +27,11 @@ function App() {
             <Route
               path="/dashboard"
               element={<Dashboard />}
+            />
+
+            <Route
+              path="/repositories/:repositoryId"
+              element={<RepositoryDetails />}
             />
           </Route>
 
