@@ -1,15 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom'
 
+import { useAuth } from '@/context/useAuth'
 import Sidebar from './Sidebar'
 import Topbar from './Topbar'
 
-interface AppLayoutProps {
-  userName?: string
-}
-
-export default function AppLayout({
-  userName = 'User',
-}: AppLayoutProps) {
+export default function AppLayout() {
+  const { user } = useAuth()
   const location = useLocation()
 
   return (
@@ -17,7 +13,7 @@ export default function AppLayout({
       <Sidebar currentPath={location.pathname} />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar userName={userName} />
+        <Topbar userName={user?.name ?? 'User'} />
 
         <main className="min-w-0 flex-1">
           <Outlet />

@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  type ReactNode,
-} from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import {
   getCurrentUser,
@@ -12,29 +6,13 @@ import {
   registerUser,
 } from '../services/auth.service'
 
-import type {
-  LoginInput,
-  RegisterInput,
-  User,
-} from '../types/auth'
+import type { LoginInput, RegisterInput, User } from '../types/auth'
 
-interface AuthContextValue {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
-  isLoading: boolean
-  login: (input: LoginInput) => Promise<void>
-  register: (input: RegisterInput) => Promise<void>
-  logout: () => void
-}
-
-const AuthContext = createContext<AuthContextValue | undefined>(
-  undefined,
-)
+import { AuthContext } from './AuthContext'
 
 const TOKEN_KEY = 'codelens_token'
 
-export function AuthProvider({
+export default function AuthProvider({
   children,
 }: {
   children: ReactNode
@@ -69,18 +47,14 @@ export function AuthProvider({
 
   async function login(input: LoginInput) {
     const response = await loginUser(input)
-
     localStorage.setItem(TOKEN_KEY, response.data.token)
-
     setToken(response.data.token)
     setUser(response.data.user)
   }
 
   async function register(input: RegisterInput) {
     const response = await registerUser(input)
-
     localStorage.setItem(TOKEN_KEY, response.data.token)
-
     setToken(response.data.token)
     setUser(response.data.user)
   }
@@ -106,16 +80,4 @@ export function AuthProvider({
       {children}
     </AuthContext.Provider>
   )
-}
-
-export function useAuth() {
-  const context = useContext(AuthContext)
-
-  if (!context) {
-    throw new Error(
-      'useAuth must be used inside an AuthProvider',
-    )
-  }
-
-  return context
 }
