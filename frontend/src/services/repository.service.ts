@@ -1,7 +1,9 @@
 import { apiRequest } from './api'
 import type {
   CreateRepositoryInput,
+  FileResponse,
   RepositoriesResponse,
+  RepositoryFilesResponse,
   RepositoryResponse,
 } from '../types/repository'
 
@@ -54,6 +56,27 @@ export async function getRepositoryStatus(
       method: 'GET',
       token,
     },
+  )
+}
+
+export async function getRepositoryFiles(
+  token: string,
+  repositoryId: string,
+): Promise<RepositoryFilesResponse> {
+  return apiRequest<RepositoryFilesResponse>(
+    `/api/v1/repositories/${repositoryId}/files`,
+    { method: 'GET', token },
+  )
+}
+
+export async function getRepositoryFile(
+  token: string,
+  repositoryId: string,
+  fileId: string,
+): Promise<FileResponse> {
+  return apiRequest<FileResponse>(
+    `/api/v1/repositories/${repositoryId}/files/${fileId}`,
+    { method: 'GET', token },
   )
 }
 

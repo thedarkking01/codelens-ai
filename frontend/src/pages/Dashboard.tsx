@@ -467,18 +467,13 @@ export default function Dashboard() {
                         </Button>
 
 
-                        <Button
-                          asChild
-                          size="sm"
-                          className="gap-2 bg-white/[0.06] text-slate-200 hover:bg-violet-500/10 hover:text-violet-300"
+                        <Link
+                          to={`/repositories/${repository.id}`}
+                          className="inline-flex h-7 items-center gap-2 rounded-[min(var(--radius-md),12px)] bg-white/[0.06] px-2.5 text-[0.8rem] text-slate-200 transition-colors hover:bg-violet-500/10 hover:text-violet-300"
                         >
-                          <Link
-                            to={`/repositories/${repository.id}`}
-                          >
-                            Open
-                            <ArrowUpRight className="h-3.5 w-3.5" />
-                          </Link>
-                        </Button>
+                          Open
+                          <ArrowUpRight className="h-3.5 w-3.5" />
+                        </Link>
 
                       </div>
 
