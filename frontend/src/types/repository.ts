@@ -51,3 +51,4 @@ export interface RepositoriesResponse {
 export interface CreateRepositoryInput {
   githubUrl: string
 }
+
