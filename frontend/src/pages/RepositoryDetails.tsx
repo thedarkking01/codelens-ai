@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ArrowLeft,
   ExternalLink,
@@ -10,145 +10,150 @@ import {
   Search,
   Sparkles,
   X,
-} from 'lucide-react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+} from "lucide-react";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-import { useAuth } from '@/context/useAuth'
+import { useAuth } from "@/context/useAuth";
 import {
+  getFileChunks,
   getRepository,
-  getRepositoryFile,
   getRepositoryFiles,
-} from '@/services/repository.service'
+} from "@/services/repository.service";
 
-import type { Repository, RepositoryFile } from '@/types/repository'
+import type { CodeChunk, Repository, RepositoryFile } from "@/types/repository";
 
-type WorkspaceTab = 'overview' | 'code' | 'architecture' | 'chat'
+type WorkspaceTab = "overview" | "code" | "architecture" | "chat";
 
 function getStatusInfo(status: string) {
   switch (status.toUpperCase()) {
-    case 'READY':
+    case "READY":
       return {
-        label: 'Ready',
-        className:
-          'border-emerald-500/20 bg-emerald-500/10 text-emerald-400',
-      }
+        label: "Ready",
+        className: "border-emerald-500/20 bg-emerald-500/10 text-emerald-400",
+      };
 
-    case 'PROCESSING':
-    case 'INDEXING':
-    case 'CLONING':
+    case "PROCESSING":
+    case "INDEXING":
+    case "CLONING":
       return {
-        label: 'Indexing',
-        className:
-          'border-amber-500/20 bg-amber-500/10 text-amber-400',
-      }
+        label: "Indexing",
+        className: "border-amber-500/20 bg-amber-500/10 text-amber-400",
+      };
 
-    case 'FAILED':
+    case "FAILED":
       return {
-        label: 'Failed',
-        className:
-          'border-red-500/20 bg-red-500/10 text-red-400',
-      }
+        label: "Failed",
+        className: "border-red-500/20 bg-red-500/10 text-red-400",
+      };
 
     default:
       return {
-        label: 'Pending',
-        className:
-          'border-slate-500/20 bg-slate-500/10 text-slate-400',
-      }
+        label: "Pending",
+        className: "border-slate-500/20 bg-slate-500/10 text-slate-400",
+      };
   }
 }
 
 function getFileExtension(file: RepositoryFile) {
   if (file.extension) {
-    return file.extension.replace('.', '').toUpperCase()
+    return file.extension.replace(".", "").toUpperCase();
   }
 
-  const parts = file.name.split('.')
+  const parts = file.name.split(".");
 
-  return parts.length > 1
-    ? parts.at(-1)?.toUpperCase() ?? 'FILE'
-    : 'FILE'
+  return parts.length > 1 ? (parts.at(-1)?.toUpperCase() ?? "FILE") : "FILE";
 }
 
 export default function RepositoryDetails() {
-  const { repositoryId } = useParams<{ repositoryId: string }>()
-  const navigate = useNavigate()
-  const { token } = useAuth()
+  const { repositoryId } = useParams<{ repositoryId: string }>();
+  const navigate = useNavigate();
+  const { token } = useAuth();
 
-  const [repository, setRepository] = useState<Repository | null>(null)
-  const [files, setFiles] = useState<RepositoryFile[]>([])
+  const [repository, setRepository] = useState<Repository | null>(null);
+  const [files, setFiles] = useState<RepositoryFile[]>([]);
 
-  const [activeTab, setActiveTab] =
-    useState<WorkspaceTab>('overview')
+  const [activeTab, setActiveTab] = useState<WorkspaceTab>("overview");
 
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState("");
 
-  const [selectedFile, setSelectedFile] =
-    useState<RepositoryFile | null>(null)
+  const [selectedFile, setSelectedFile] = useState<RepositoryFile | null>(null);
+  const [chunks, setChunks] = useState<CodeChunk[]>([]);
+  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [fileError, setFileError] = useState("");
 
-  const [isFileLoading, setIsFileLoading] =
-    useState(false)
-
-  const [fileError, setFileError] = useState('')
-
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
-  const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [error, setError] = useState("");
 
   const loadRepository = useCallback(
     async (showRefreshing = false) => {
-      if (!token || !repositoryId) return
+      if (!token || !repositoryId) return;
 
       if (showRefreshing) {
-        setIsRefreshing(true)
+        setIsRefreshing(true);
       } else {
-        setIsLoading(true)
+        setIsLoading(true);
       }
 
-      setError('')
+      setError("");
 
       try {
         const [repoRes, filesRes] = await Promise.all([
           getRepository(token, repositoryId),
           getRepositoryFiles(token, repositoryId),
-        ])
+        ]);
 
-        setRepository(repoRes.data)
-        setFiles(filesRes.data)
+        setRepository(repoRes.data);
+        setFiles(filesRes.data);
       } catch (err) {
         setError(
-          err instanceof Error
-            ? err.message
-            : 'Failed to load repository',
-        )
+          err instanceof Error ? err.message : "Failed to load repository",
+        );
       } finally {
-        setIsLoading(false)
-        setIsRefreshing(false)
+        setIsLoading(false);
+        setIsRefreshing(false);
       }
     },
     [token, repositoryId],
-  )
+  );
 
   useEffect(() => {
-    void loadRepository()
-  }, [loadRepository])
+    let cancelled = false
+
+    async function load() {
+      if (!token || !repositoryId) return
+      try {
+        const [repoRes, filesRes] = await Promise.all([
+          getRepository(token, repositoryId),
+          getRepositoryFiles(token, repositoryId),
+        ])
+        if (!cancelled) {
+          setRepository(repoRes.data)
+          setFiles(filesRes.data)
+          setIsLoading(false)
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Failed to load repository')
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void load()
+    return () => { cancelled = true }
+  }, [token, repositoryId])
 
   const filteredFiles = useMemo(() => {
-    const query = search.trim().toLowerCase()
+    const query = search.trim().toLowerCase();
 
     if (!query) {
-      return files
+      return files;
     }
 
     return files.filter(
@@ -156,41 +161,32 @@ export default function RepositoryDetails() {
         file.name.toLowerCase().includes(query) ||
         file.path.toLowerCase().includes(query) ||
         file.language?.toLowerCase().includes(query),
-    )
-  }, [files, search])
+    );
+  }, [files, search]);
 
   async function handleFileSelect(file: RepositoryFile) {
-    if (!token || !repositoryId) return
-
-    setSelectedFile(file)
-    setFileError('')
-    setIsFileLoading(true)
-
+    if (!token || !repositoryId) return;
+    setSelectedFile(file);
+    setFileError("");
+    setChunks([]);
+    setIsFileLoading(true);
     try {
-      const response = await getRepositoryFile(
-        token,
-        repositoryId,
-        file.id,
-      )
-
-      setSelectedFile(response.data)
+      const response = await getFileChunks(token, repositoryId, file.id);
+      const sorted = [...response.data].sort((a, b) => a.chunkIndex - b.chunkIndex);
+      setChunks(sorted);
     } catch (err) {
-      setFileError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to load file',
-      )
+      setFileError(err instanceof Error ? err.message : "Failed to load file");
     } finally {
-      setIsFileLoading(false)
+      setIsFileLoading(false);
     }
   }
 
   function handleTabChange(tab: WorkspaceTab) {
-    setActiveTab(tab)
-
-    if (tab !== 'code') {
-      setSelectedFile(null)
-      setFileError('')
+    setActiveTab(tab);
+    if (tab !== "code") {
+      setSelectedFile(null);
+      setChunks([]);
+      setFileError("");
     }
   }
 
@@ -199,12 +195,10 @@ export default function RepositoryDetails() {
       <div className="flex min-h-[70vh] items-center justify-center">
         <div className="flex flex-col items-center gap-3 text-slate-500">
           <Loader2 className="h-7 w-7 animate-spin text-violet-400" />
-          <p className="text-sm">
-            Loading repository...
-          </p>
+          <p className="text-sm">Loading repository...</p>
         </div>
       </div>
-    )
+    );
   }
 
   if (error || !repository) {
@@ -213,28 +207,27 @@ export default function RepositoryDetails() {
         <Card className="border-red-500/20 bg-[#111720]">
           <CardContent className="flex flex-col items-center py-12 text-center">
             <p className="text-sm text-red-400">
-              {error || 'Repository not found'}
+              {error || "Repository not found"}
             </p>
 
             <Button
               variant="outline"
               className="mt-5"
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate("/dashboard")}
             >
               Back to Dashboard
             </Button>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  const status = getStatusInfo(repository.status)
+  const status = getStatusInfo(repository.status);
 
   return (
     <div className="min-h-full bg-[#0b0f14]">
       <div className="mx-auto max-w-[1500px] px-5 py-6 lg:px-8">
-
         {/* Breadcrumb */}
         <div className="mb-5 flex items-center gap-2 text-sm">
           <Link
@@ -258,7 +251,6 @@ export default function RepositoryDetails() {
 
           <div className="relative p-6 lg:p-7">
             <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
-
               <div className="flex gap-4">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/[0.08] bg-white/[0.04] text-violet-400">
                   <Sparkles className="h-6 w-6" />
@@ -270,10 +262,7 @@ export default function RepositoryDetails() {
                       {repository.name}
                     </h1>
 
-                    <Badge
-                      variant="outline"
-                      className={status.className}
-                    >
+                    <Badge variant="outline" className={status.className}>
                       {status.label}
                     </Badge>
                   </div>
@@ -292,12 +281,10 @@ export default function RepositoryDetails() {
                   <div className="mt-4 flex flex-wrap gap-4 text-xs text-slate-500">
                     <span className="flex items-center gap-1.5">
                       <GitBranch className="h-3.5 w-3.5" />
-                      {repository.branch || 'main'}
+                      {repository.branch || "main"}
                     </span>
 
-                    <span>
-                      {files.length} files
-                    </span>
+                    <span>{files.length} files</span>
                   </div>
                 </div>
               </div>
@@ -305,20 +292,15 @@ export default function RepositoryDetails() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() =>
-                  void loadRepository(true)
-                }
+                onClick={() => void loadRepository(true)}
                 disabled={isRefreshing}
                 className="gap-2 border-white/[0.08] bg-white/[0.03] text-slate-300 hover:bg-white/[0.06] hover:text-white"
               >
                 <RefreshCw
                   className={`h-3.5 w-3.5 ${
-                    isRefreshing
-                      ? 'animate-spin'
-                      : ''
+                    isRefreshing ? "animate-spin" : ""
                   }`}
                 />
-
                 Refresh
               </Button>
             </div>
@@ -327,16 +309,13 @@ export default function RepositoryDetails() {
 
         {/* Workspace Tabs */}
         <div className="mb-6 flex items-center gap-1 overflow-x-auto border-b border-white/[0.07]">
-
           <button
             type="button"
-            onClick={() =>
-              handleTabChange('overview')
-            }
+            onClick={() => handleTabChange("overview")}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'overview'
-                ? 'border-violet-500 text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+              activeTab === "overview"
+                ? "border-violet-500 text-white"
+                : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
             Overview
@@ -344,13 +323,11 @@ export default function RepositoryDetails() {
 
           <button
             type="button"
-            onClick={() =>
-              handleTabChange('code')
-            }
+            onClick={() => handleTabChange("code")}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'code'
-                ? 'border-violet-500 text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+              activeTab === "code"
+                ? "border-violet-500 text-white"
+                : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
             Code Explorer
@@ -358,13 +335,11 @@ export default function RepositoryDetails() {
 
           <button
             type="button"
-            onClick={() =>
-              handleTabChange('architecture')
-            }
+            onClick={() => handleTabChange("architecture")}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'architecture'
-                ? 'border-violet-500 text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+              activeTab === "architecture"
+                ? "border-violet-500 text-white"
+                : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
             Architecture
@@ -372,13 +347,11 @@ export default function RepositoryDetails() {
 
           <button
             type="button"
-            onClick={() =>
-              handleTabChange('chat')
-            }
+            onClick={() => handleTabChange("chat")}
             className={`border-b-2 px-4 py-3 text-sm font-medium transition-colors ${
-              activeTab === 'chat'
-                ? 'border-violet-500 text-white'
-                : 'border-transparent text-slate-500 hover:text-slate-300'
+              activeTab === "chat"
+                ? "border-violet-500 text-white"
+                : "border-transparent text-slate-500 hover:text-slate-300"
             }`}
           >
             AI Chat
@@ -389,9 +362,8 @@ export default function RepositoryDetails() {
         {/* OVERVIEW */}
         {/* ================================================= */}
 
-        {activeTab === 'overview' && (
+        {activeTab === "overview" && (
           <div className="grid gap-6 xl:grid-cols-[1fr_360px]">
-
             <Card className="border-white/[0.07] bg-[#111720] shadow-none">
               <CardHeader>
                 <CardTitle className="text-base text-white">
@@ -405,11 +377,8 @@ export default function RepositoryDetails() {
 
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-3">
-
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-                    <p className="text-xs text-slate-500">
-                      Files
-                    </p>
+                    <p className="text-xs text-slate-500">Files</p>
 
                     <p className="mt-2 text-2xl font-semibold text-white">
                       {files.length}
@@ -417,25 +386,20 @@ export default function RepositoryDetails() {
                   </div>
 
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-                    <p className="text-xs text-slate-500">
-                      Branch
-                    </p>
+                    <p className="text-xs text-slate-500">Branch</p>
 
                     <p className="mt-2 truncate font-mono text-sm text-white">
-                      {repository.branch || 'main'}
+                      {repository.branch || "main"}
                     </p>
                   </div>
 
                   <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-5">
-                    <p className="text-xs text-slate-500">
-                      Status
-                    </p>
+                    <p className="text-xs text-slate-500">Status</p>
 
                     <p className="mt-2 text-sm font-medium text-emerald-400">
                       {status.label}
                     </p>
                   </div>
-
                 </div>
               </CardContent>
             </Card>
@@ -449,19 +413,14 @@ export default function RepositoryDetails() {
                 </h3>
 
                 <p className="mt-2 text-xs leading-5 text-slate-500">
-                  Browse source files, inspect architecture,
-                  and ask CodeLens AI questions about this
-                  repository.
+                  Browse source files, inspect architecture, and ask CodeLens AI
+                  questions about this repository.
                 </p>
 
                 <Button
                   className="mt-5 w-full gap-2 bg-violet-600 hover:bg-violet-500"
-                  onClick={() =>
-                    handleTabChange('code')
-                  }
-                  disabled={
-                    repository.status !== 'READY'
-                  }
+                  onClick={() => handleTabChange("code")}
+                  disabled={repository.status !== "READY"}
                 >
                   <FileCode2 className="h-4 w-4" />
                   Open Code Explorer
@@ -475,14 +434,11 @@ export default function RepositoryDetails() {
         {/* CODE EXPLORER */}
         {/* ================================================= */}
 
-        {activeTab === 'code' && (
+        {activeTab === "code" && (
           <Card className="overflow-hidden border-white/[0.07] bg-[#111720] shadow-none">
-
             <div className="grid min-h-[650px] xl:grid-cols-[360px_1fr]">
-
               {/* File Explorer */}
               <div className="border-b border-white/[0.06] xl:border-b-0 xl:border-r">
-
                 <div className="border-b border-white/[0.06] p-4">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Explorer
@@ -493,9 +449,7 @@ export default function RepositoryDetails() {
 
                     <Input
                       value={search}
-                      onChange={(event) =>
-                        setSearch(event.target.value)
-                      }
+                      onChange={(event) => setSearch(event.target.value)}
                       placeholder="Search files..."
                       className="h-9 border-white/[0.07] bg-black/20 pl-9 text-xs text-white placeholder:text-slate-600"
                     />
@@ -514,27 +468,24 @@ export default function RepositoryDetails() {
                   ) : (
                     <div className="space-y-0.5">
                       {filteredFiles.map((file) => {
-                        const isSelected =
-                          selectedFile?.id === file.id
+                        const isSelected = selectedFile?.id === file.id;
 
                         return (
                           <button
                             key={file.id}
                             type="button"
-                            onClick={() =>
-                              void handleFileSelect(file)
-                            }
+                            onClick={() => void handleFileSelect(file)}
                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
                               isSelected
-                                ? 'bg-violet-500/10 text-white'
-                                : 'text-slate-400 hover:bg-white/[0.03] hover:text-slate-200'
+                                ? "bg-violet-500/10 text-white"
+                                : "text-slate-400 hover:bg-white/[0.03] hover:text-slate-200"
                             }`}
                           >
                             <FileCode2
                               className={`h-4 w-4 shrink-0 ${
                                 isSelected
-                                  ? 'text-violet-400'
-                                  : 'text-slate-600'
+                                  ? "text-violet-400"
+                                  : "text-slate-600"
                               }`}
                             />
 
@@ -548,7 +499,7 @@ export default function RepositoryDetails() {
                               {getFileExtension(file)}
                             </span>
                           </button>
-                        )
+                        );
                       })}
                     </div>
                   )}
@@ -557,7 +508,6 @@ export default function RepositoryDetails() {
 
               {/* File Viewer */}
               <div className="min-w-0">
-
                 {!selectedFile ? (
                   <div className="flex min-h-[650px] flex-col items-center justify-center px-6 text-center">
                     <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
@@ -569,34 +519,30 @@ export default function RepositoryDetails() {
                     </h3>
 
                     <p className="mt-2 max-w-sm text-sm leading-6 text-slate-500">
-                      Choose a file from the explorer to
-                      inspect its indexed information.
+                      Choose a file from the explorer to inspect its indexed
+                      information.
                     </p>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center justify-between border-b border-white/[0.06] px-5 py-4">
-
                       <div className="min-w-0">
                         <p className="truncate font-mono text-sm text-white">
                           {selectedFile.path}
                         </p>
 
                         <p className="mt-1 text-xs text-slate-600">
-                          {selectedFile.language ||
-                            'Unknown language'}
+                          {selectedFile.language || "Unknown language"}
                           {selectedFile.size
                             ? ` • ${selectedFile.size} bytes`
-                            : ''}
+                            : ""}
                         </p>
                       </div>
 
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() =>
-                          setSelectedFile(null)
-                        }
+                        onClick={() => setSelectedFile(null)}
                         className="ml-4 shrink-0 text-slate-500 hover:text-white"
                       >
                         <X className="h-4 w-4" />
@@ -607,105 +553,44 @@ export default function RepositoryDetails() {
                       <div className="flex min-h-[560px] items-center justify-center">
                         <div className="flex flex-col items-center gap-3 text-slate-500">
                           <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
-
-                          <p className="text-xs">
-                            Loading file...
-                          </p>
+                          <p className="text-xs">Loading file...</p>
                         </div>
                       </div>
                     ) : fileError ? (
                       <div className="p-6">
                         <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5">
-                          <p className="text-sm text-red-400">
-                            {fileError}
-                          </p>
+                          <p className="text-sm text-red-400">{fileError}</p>
                         </div>
                       </div>
+                    ) : chunks.length === 0 ? (
+                      <div className="flex min-h-[560px] flex-col items-center justify-center text-center">
+                        <Folder className="h-7 w-7 text-slate-700" />
+                        <p className="mt-3 text-sm text-slate-500">No indexed chunks found for this file.</p>
+                      </div>
                     ) : (
-                      <div className="min-h-[560px] p-6">
-                        <div className="rounded-xl border border-white/[0.06] bg-black/20 p-5">
-
-                          <p className="text-xs font-semibold uppercase tracking-wider text-slate-600">
-                            Indexed file
-                          </p>
-
-                          <div className="mt-5 space-y-4">
-
-                            <div>
-                              <p className="text-xs text-slate-600">
-                                Name
-                              </p>
-
-                              <p className="mt-1 font-mono text-sm text-slate-200">
-                                {selectedFile.name}
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-xs text-slate-600">
-                                Path
-                              </p>
-
-                              <p className="mt-1 break-all font-mono text-sm text-slate-200">
-                                {selectedFile.path}
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-xs text-slate-600">
-                                Language
-                              </p>
-
-                              <p className="mt-1 text-sm text-slate-200">
-                                {selectedFile.language ||
-                                  'Unknown'}
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-xs text-slate-600">
-                                Extension
-                              </p>
-
-                              <p className="mt-1 font-mono text-sm text-slate-200">
-                                {getFileExtension(
-                                  selectedFile,
-                                )}
-                              </p>
-                            </div>
-
-                            <div>
-                              <p className="text-xs text-slate-600">
-                                Size
-                              </p>
-
-                              <p className="mt-1 font-mono text-sm text-slate-200">
-                                {selectedFile.size
-                                  ? `${selectedFile.size} bytes`
-                                  : 'Unknown'}
-                              </p>
-                            </div>
-
-                          </div>
-                        </div>
-
-                        <div className="mt-5 rounded-xl border border-violet-500/10 bg-violet-500/[0.04] p-5">
-                          <div className="flex items-start gap-3">
-                            <Sparkles className="mt-0.5 h-4 w-4 shrink-0 text-violet-400" />
-
-                            <div>
-                              <p className="text-sm font-medium text-white">
-                                Code understanding
-                              </p>
-
-                              <p className="mt-1 text-xs leading-5 text-slate-500">
-                                Source-code rendering will be
-                                connected to the indexed chunks
-                                in the next File Viewer step.
-                              </p>
-                            </div>
-                          </div>
-                        </div>
+                      <div className="overflow-auto">
+                        <table className="w-full border-collapse font-mono text-xs">
+                          <tbody>
+                            {chunks.map((chunk) =>
+                              chunk.content.split('\n').map((line, i) => {
+                                const lineNumber = chunk.startLine + i;
+                                return (
+                                  <tr
+                                    key={`${chunk.id}-${lineNumber}`}
+                                    className="group hover:bg-white/[0.02]"
+                                  >
+                                    <td className="w-12 select-none border-r border-white/[0.04] px-3 py-0.5 text-right text-slate-600 group-hover:text-slate-500">
+                                      {lineNumber}
+                                    </td>
+                                    <td className="px-4 py-0.5 text-slate-300 whitespace-pre">
+                                      {line || ' '}
+                                    </td>
+                                  </tr>
+                                );
+                              })
+                            )}
+                          </tbody>
+                        </table>
                       </div>
                     )}
                   </>
@@ -719,10 +604,9 @@ export default function RepositoryDetails() {
         {/* ARCHITECTURE */}
         {/* ================================================= */}
 
-        {activeTab === 'architecture' && (
+        {activeTab === "architecture" && (
           <Card className="border-white/[0.07] bg-[#111720] shadow-none">
             <CardContent className="flex min-h-[600px] flex-col items-center justify-center px-6 text-center">
-
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
                 <GitBranch className="h-7 w-7" />
               </div>
@@ -732,10 +616,9 @@ export default function RepositoryDetails() {
               </h2>
 
               <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                The dependency graph is the next Phase 10
-                feature. We'll connect the existing Phase 9
-                dependency analysis here without changing the
-                backend pipeline.
+                The dependency graph is the next Phase 10 feature. We'll connect
+                the existing Phase 9 dependency analysis here without changing
+                the backend pipeline.
               </p>
 
               <Badge
@@ -752,10 +635,9 @@ export default function RepositoryDetails() {
         {/* AI CHAT */}
         {/* ================================================= */}
 
-        {activeTab === 'chat' && (
+        {activeTab === "chat" && (
           <Card className="border-white/[0.07] bg-[#111720] shadow-none">
             <CardContent className="flex min-h-[600px] flex-col items-center justify-center px-6 text-center">
-
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
                 <Sparkles className="h-7 w-7" />
               </div>
@@ -765,9 +647,8 @@ export default function RepositoryDetails() {
               </h2>
 
               <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                Your conversational RAG engine is already
-                implemented. We'll connect the existing chat
-                API to this workspace next.
+                Your conversational RAG engine is already implemented. We'll
+                connect the existing chat API to this workspace next.
               </p>
 
               <Badge
@@ -781,5 +662,5 @@ export default function RepositoryDetails() {
         )}
       </div>
     </div>
-  )
+  );
 }

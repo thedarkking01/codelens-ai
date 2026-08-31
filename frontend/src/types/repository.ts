@@ -52,3 +52,20 @@ export interface CreateRepositoryInput {
   githubUrl: string
 }
 
+export interface CodeChunk {
+  id: string
+  fileId: string
+  content: string
+  chunkIndex: number
+  startLine: number
+  endLine: number
+  embeddingId?: string | null
+  embeddedAt?: string | null
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface FileChunksResponse {
+  success: boolean
+  data: CodeChunk[]
+}

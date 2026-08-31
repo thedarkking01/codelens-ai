@@ -1,6 +1,7 @@
 import { apiRequest } from './api'
 import type {
   CreateRepositoryInput,
+  FileChunksResponse,
   FileResponse,
   RepositoriesResponse,
   RepositoryFilesResponse,
@@ -76,6 +77,17 @@ export async function getRepositoryFile(
 ): Promise<FileResponse> {
   return apiRequest<FileResponse>(
     `/api/v1/repositories/${repositoryId}/files/${fileId}`,
+    { method: 'GET', token },
+  )
+}
+
+export async function getFileChunks(
+  token: string,
+  repositoryId: string,
+  fileId: string,
+): Promise<FileChunksResponse> {
+  return apiRequest<FileChunksResponse>(
+    `/api/v1/repositories/${repositoryId}/files/${fileId}/chunks`,
     { method: 'GET', token },
   )
 }
