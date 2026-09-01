@@ -62,3 +62,38 @@ export async function buildFileDependencies(
 
   return createdCount;
 }
+
+export async function getRepositoryDependencies(
+  repositoryId: string,
+) {
+  return prisma.dependency.findMany({
+    where: {
+      sourceFile: {
+        repositoryId,
+      },
+    },
+    include: {
+      sourceFile: {
+        select: {
+          id: true,
+          path: true,
+          name: true,
+          language: true,
+        },
+      },
+      targetFile: {
+        select: {
+          id: true,
+          path: true,
+          name: true,
+          language: true,
+        },
+      },
+    },
+    orderBy: {
+      sourceFile: {
+        path: "asc",
+      },
+    },
+  });
+}

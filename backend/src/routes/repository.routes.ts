@@ -3,6 +3,7 @@ import { repositoryController } from "../controllers/repository.controller";
 import { authMiddleware } from "../middleware/auth.middleware";
 import { fileController } from "../controllers/file.controller";
 import { chunkController } from "../controllers/chunk.controller";
+import { getDependencies } from "../controllers/dependency.controller";
 
 const router = Router();
 
@@ -44,6 +45,12 @@ router.get(
       res,
       next,
     ),
+);
+
+// Repository dependencies
+router.get(
+  "/:repositoryId/dependencies",
+  (req, res, next) => getDependencies(req, res, next),
 );
 
 // Repository by ID

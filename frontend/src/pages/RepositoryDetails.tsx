@@ -24,6 +24,10 @@ import {
   getRepository,
   getRepositoryFiles,
 } from "@/services/repository.service";
+import {
+  getRepositoryDependencies,
+  type RepositoryDependency,
+} from "@/services/dependency.service";
 
 import type { CodeChunk, Repository, RepositoryFile } from "@/types/repository";
 
@@ -89,6 +93,10 @@ export default function RepositoryDetails() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState("");
+
+  const [dependencies, setDependencies] = useState<RepositoryDependency[]>([]);
+  const [isDepsLoading, setIsDepsLoading] = useState(false);
+  const [depsError, setDepsError] = useState("");
 
   const loadRepository = useCallback(
     async (showRefreshing = false) => {
@@ -187,6 +195,17 @@ export default function RepositoryDetails() {
       setSelectedFile(null);
       setChunks([]);
       setFileError("");
+    }
+    if (tab === "architecture" && dependencies.length === 0 && !isDepsLoading) {
+      if (!token || !repositoryId) return;
+      setIsDepsLoading(true);
+      setDepsError("");
+      getRepositoryDependencies(token, repositoryId)
+        .then((res) => setDependencies(res.data))
+        .catch((err) =>
+          setDepsError(err instanceof Error ? err.message : "Failed to load dependencies"),
+        )
+        .finally(() => setIsDepsLoading(false));
     }
   }
 
@@ -605,30 +624,105 @@ export default function RepositoryDetails() {
         {/* ================================================= */}
 
         {activeTab === "architecture" && (
-          <Card className="border-white/[0.07] bg-[#111720] shadow-none">
-            <CardContent className="flex min-h-[600px] flex-col items-center justify-center px-6 text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
-                <GitBranch className="h-7 w-7" />
+          <div className="space-y-4">
+
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-base font-semibold text-white">Dependency graph</h2>
+                <p className="mt-0.5 text-xs text-slate-500">
+                  Internal file imports resolved by CodeLens AI.
+                </p>
               </div>
+              {!isDepsLoading && (
+                <Badge variant="outline" className="border-white/[0.07] text-slate-400">
+                  {dependencies.length} edges
+                </Badge>
+              )}
+            </div>
 
-              <h2 className="mt-5 text-xl font-semibold text-white">
-                Architecture Explorer
-              </h2>
+            {isDepsLoading ? (
+              <Card className="border-white/[0.07] bg-[#111720] shadow-none">
+                <CardContent className="flex min-h-[500px] items-center justify-center">
+                  <div className="flex flex-col items-center gap-3">
+                    <Loader2 className="h-6 w-6 animate-spin text-violet-400" />
+                    <p className="text-sm text-slate-500">Analysing dependencies...</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : depsError ? (
+              <Card className="border-red-500/20 bg-[#111720] shadow-none">
+                <CardContent className="p-6">
+                  <p className="text-sm text-red-400">{depsError}</p>
+                </CardContent>
+              </Card>
+            ) : dependencies.length === 0 ? (
+              <Card className="border-white/[0.07] bg-[#111720] shadow-none">
+                <CardContent className="flex min-h-[400px] flex-col items-center justify-center text-center">
+                  <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/10 text-violet-400">
+                    <GitBranch className="h-6 w-6" />
+                  </div>
+                  <h3 className="mt-4 font-semibold text-white">No dependencies found</h3>
+                  <p className="mt-2 max-w-sm text-sm text-slate-500">
+                    This repository has no resolved internal imports. Try a repository
+                    with TypeScript or Python files that import each other.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card className="overflow-hidden border-white/[0.07] bg-[#111720] shadow-none">
+                <div className="divide-y divide-white/[0.05]">
+                  {(() => {
+                    // Group edges by source file
+                    const grouped = new Map<string, { source: RepositoryDependency['sourceFile']; targets: { file: RepositoryDependency['targetFile']; type: string }[] }>();
+                    for (const dep of dependencies) {
+                      const existing = grouped.get(dep.sourceFileId);
+                      if (existing) {
+                        existing.targets.push({ file: dep.targetFile, type: dep.type });
+                      } else {
+                        grouped.set(dep.sourceFileId, {
+                          source: dep.sourceFile,
+                          targets: [{ file: dep.targetFile, type: dep.type }],
+                        });
+                      }
+                    }
+                    return Array.from(grouped.values()).map((group) => (
+                      <div key={group.source.id} className="p-5">
+                        {/* Source file */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+                            <FileCode2 className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate font-mono text-sm text-white">{group.source.path}</p>
+                            <p className="text-xs text-slate-600">{group.source.language ?? 'Unknown'}</p>
+                          </div>
+                          <Badge variant="outline" className="ml-auto shrink-0 border-white/[0.07] text-[10px] text-slate-500">
+                            {group.targets.length} import{group.targets.length !== 1 ? 's' : ''}
+                          </Badge>
+                        </div>
 
-              <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500">
-                The dependency graph is the next Phase 10 feature. We'll connect
-                the existing Phase 9 dependency analysis here without changing
-                the backend pipeline.
-              </p>
-
-              <Badge
-                variant="outline"
-                className="mt-5 border-violet-500/20 bg-violet-500/10 text-violet-400"
-              >
-                Coming next
-              </Badge>
-            </CardContent>
-          </Card>
+                        {/* Edges */}
+                        <div className="ml-4 mt-2 space-y-1.5 border-l border-white/[0.06] pl-7">
+                          {group.targets.map((t) => (
+                            <div key={t.file.id} className="flex items-center gap-3">
+                              <ArrowLeft className="h-3 w-3 shrink-0 rotate-180 text-slate-700" />
+                              <div className="min-w-0 flex-1">
+                                <p className="truncate font-mono text-xs text-slate-400">{t.file.path}</p>
+                              </div>
+                              <span className="shrink-0 rounded bg-white/[0.04] px-1.5 py-0.5 font-mono text-[10px] text-slate-600">
+                                {t.type}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              </Card>
+            )}
+          </div>
         )}
 
         {/* ================================================= */}
