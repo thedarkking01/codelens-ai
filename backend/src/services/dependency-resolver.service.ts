@@ -40,58 +40,48 @@ export async function resolveDependency(
   if (language === "python") {
     const pythonCandidates: string[] = [];
 
-    // Relative Python imports:
-    // from .utils import something
-    if (
-      importPath.startsWith(".") ||
-      importPath.startsWith("/")
-    ) {
-      const normalizedPath =
-        path.posix.normalize(
-          path.posix.join(
-            sourceDirectory,
-            importPath,
-          ),
-        );
+    if (importPath.startsWith(".")) {
+      // Relative imports: .models -> models, ..config -> ../config
+      const dotCount = importPath.match(/^\.+/)?.[0].length ?? 1;
+      const modulePath = importPath
+        .replace(/^\.+/, "")
+        .replace(/\./g, "/");
+
+      const base =
+        dotCount === 1
+          ? sourceDirectory
+          : path.posix.normalize(
+              path.posix.join(
+                sourceDirectory,
+                "../".repeat(dotCount - 1),
+              ),
+            );
+
+      const normalizedPath = modulePath
+        ? path.posix.join(base, modulePath)
+        : base;
 
       pythonCandidates.push(
         `${normalizedPath}.py`,
-        path.posix.join(
-          normalizedPath,
-          "__init__.py",
-        ),
+        path.posix.join(normalizedPath, "__init__.py"),
       );
     } else {
-      // Local Python imports:
-      //
-      // import game_logic
-      // import player
-      // import computer
-      //
-      // Resolve relative to the source file's directory.
+      const modulePath = importPath.replace(/\./g, "/");
 
       pythonCandidates.push(
-        path.posix.join(
-          sourceDirectory,
-          `${importPath}.py`,
-        ),
-        path.posix.join(
-          sourceDirectory,
-          importPath,
-          "__init__.py",
-        ),
+        `${modulePath}.py`,
+        path.posix.join(modulePath, "__init__.py"),
+        path.posix.join(sourceDirectory, `${modulePath}.py`),
+        path.posix.join(sourceDirectory, modulePath, "__init__.py"),
       );
     }
 
-    const targetFile =
-      await prisma.file.findFirst({
-        where: {
-          repositoryId: sourceFile.repositoryId,
-          path: {
-            in: pythonCandidates,
-          },
-        },
-      });
+    const targetFile = await prisma.file.findFirst({
+      where: {
+        repositoryId: sourceFile.repositoryId,
+        path: { in: pythonCandidates },
+      },
+    });
 
     return targetFile?.id ?? null;
   }

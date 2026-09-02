@@ -70,7 +70,7 @@ function parsePythonDependencies(
     /^\s*import\s+([a-zA-Z_][\w.]*)/gm;
 
   const fromRegex =
-    /^\s*from\s+([a-zA-Z_][\w.]*)\s+import\s+/gm;
+    /^\s*from\s+(\.+[a-zA-Z_][\w.]*|[a-zA-Z_][\w.]*)\s+import\s+/gm;
 
   let match: RegExpExecArray | null;
 
