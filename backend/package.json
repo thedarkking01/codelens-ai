@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "dev": "tsx watch src/server.ts",
+    "dev": "concurrently \"npm run dev:server\" \"npm run dev:worker\"",
+    "dev:server": "tsx watch src/server.ts",
+    "dev:worker": "tsx src/workers/repository-index.worker.ts",
     "build": "tsc",
     "start": "node dist/server.js"
   },
@@ -42,6 +44,7 @@
     "@types/multer": "^2.2.0",
     "@types/node": "^26.1.2",
     "@types/uuid": "^10.0.0",
+    "concurrently": "^10.0.5",
     "tsx": "^4.23.1",
     "typescript": "^7.0.2"
   }

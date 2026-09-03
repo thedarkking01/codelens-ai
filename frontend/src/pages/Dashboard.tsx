@@ -92,6 +92,8 @@ export default function Dashboard() {
   const [error, setError] = useState('')
   const [showImportForm, setShowImportForm] = useState(false)
 
+  const TERMINAL = ['READY', 'FAILED']
+
   const loadRepositories = useCallback(async () => {
     if (!token) return
     setIsLoading(true)
@@ -108,10 +110,8 @@ export default function Dashboard() {
     }
   }, [token])
 
-
   useEffect(() => {
     let cancelled = false
-
     async function load() {
       if (!token) return
       try {
@@ -126,10 +126,27 @@ export default function Dashboard() {
         if (!cancelled) setIsLoading(false)
       }
     }
-
     void load()
     return () => { cancelled = true }
   }, [token])
+
+  // Poll every 4s while any repo is still indexing
+  useEffect(() => {
+    if (!token) return
+    const hasIndexing = repositories.some(
+      (r) => !TERMINAL.includes(r.status.toUpperCase()),
+    )
+    if (!hasIndexing) return
+    const interval = setInterval(async () => {
+      try {
+        const response = await getRepositories(token)
+        setRepositories(response.data)
+      } catch {
+        // silent — don't disrupt UI during background poll
+      }
+    }, 4000)
+    return () => clearInterval(interval)
+  }, [token, repositories])
 
 
   async function handleDelete(repositoryId: string) {
