@@ -293,6 +293,8 @@ npx prisma migrate dev
 npm run dev
 ```
 
+> **Note:** `npx prisma migrate dev` automatically runs `prisma generate` after applying migrations, so you don't need to run it separately. Only run `npx prisma generate` explicitly if you need to regenerate the Prisma client without running migrations (e.g., in production using `prisma migrate deploy`).
+
 This starts both the **API server** (`localhost:5000`) and the **indexing worker** concurrently.
 
 ### 4. Set up the frontend
